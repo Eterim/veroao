@@ -7,8 +7,6 @@ Skills for AI coding agents (Claude Code, Cursor, Codex, …) to work with [Vero
 | [`vero`](skills/vero/SKILL.md) | Integrate with the Vero API: customers, products, invoices, credit/debit notes, receipts, pro-formas, webhooks, `@veroao/*` SDKs. |
 | [`vero-template`](skills/vero-template/SKILL.md) | Design invoice templates in React + Tailwind with [`@veroao/invoice`](https://github.com/Eterim/vero-template), check them against AGT rules, render PDFs, import them into Vero or publish them to the gallery. |
 
-The skills themselves are written in Portuguese - Vero's users are in Angola.
-
 ## Install
 
 ```bash

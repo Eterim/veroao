@@ -1,48 +1,50 @@
 ---
 name: vero
-description: Integrar com a API da Vero (facturação electrónica certificada pela AGT em Angola) — criar clientes, produtos, facturas, notas de crédito/débito, recibos, proformas e webhooks. Usa isto sempre que o utilizador pedir para "criar uma factura", "integrar com a Vero", "emitir documento fiscal" ou trabalhar com o SDK @veroao/*.
+description: Integrate with the Vero API (AGT-certified electronic invoicing for Angola) - create customers, products, invoices, credit/debit notes, receipts, pro-formas and webhooks. Use this whenever the user asks to "create an invoice", "integrate with Vero", "issue a fiscal document" (or the Portuguese "criar uma factura", "emitir documento fiscal"), or works with the @veroao/* SDKs.
 ---
 
-# Vero — API de Facturação Electrónica (Angola)
+# Vero - Electronic Invoicing API (Angola)
 
-A Vero é uma plataforma de facturação certificada pela AGT (Administração Geral Tributária de Angola). Este skill dá-te o essencial para integrar correctamente sem teres de ler toda a documentação.
+Vero is an invoicing platform certified by the AGT (Administração Geral Tributária, Angola's tax authority). This skill gives you what you need to integrate correctly without reading the whole documentation.
 
-## Autenticação
+Fiscal terms stay in Portuguese, as in the API and on the documents: *factura* (invoice), *factura-recibo* (invoice-receipt), *nota de crédito/débito*, *recibo*, *pró-forma*, *NIF* (tax ID), *IVA* (VAT), *Consumidor Final* (anonymous end customer).
 
-Duas famílias de chaves, nunca trocar o uso uma pela outra:
+## Authentication
 
-- **`sk_...` (secret key)** — uso **servidor-a-servidor apenas**. Nunca expor no browser/frontend. Enviada como `Authorization: Bearer sk_...`. Dá acesso a toda a API da organização.
-- **`pk_...` (publishable key)** — segura para usar no browser. Só funciona nas rotas `/v1/widget/*`. Usada pelo `@veroao/widget`.
+Two families of keys - never use one in place of the other:
 
-Chaves têm ambiente `live` ou `test` (`vero_live_sk_...` / `vero_test_sk_...`). Chaves `test` nunca tocam a AGT real — usa-as para desenvolvimento.
+- **`sk_...` (secret key)** - **server-to-server only**. Never expose it in the browser/frontend. Sent as `Authorization: Bearer sk_...`. Gives access to the organisation's whole API.
+- **`pk_...` (publishable key)** - safe in the browser. Only works on `/v1/widget/*` routes. Used by `@veroao/widget`.
+
+Keys are `live` or `test` (`vero_live_sk_...` / `vero_test_sk_...`). `test` keys never touch the real AGT - use them for development.
 
 Base URL: `https://api.vero.ao`
 
-## Conceitos importantes antes de escrever código
+## Key concepts before writing code
 
-- **Valores monetários são sempre inteiros em cêntimos de Kwanza (AOA)**. 1.000,00 Kz = `100000`. Nunca enviar floats.
-- **`taxRate` é opcional e, se possível, deves omiti-lo.** Se enviado, só aceita `0`, `5` ou `14`. Se omitido, o servidor resolve-o sozinho a partir do regime de IVA configurado na organização (`ivaRegime`/`defaultTaxRate`, definidos no dashboard em Definições → Perfil) — nunca assumas `14` no teu código. Organizações em regime `isento` ou `simplificado` (isto é, "Exclusão" na UI) **não podem** ter linhas com taxa diferente de `0`; a API rejeita com `422 tax_rate_incompatible_with_regime` se enviares uma taxa incompatível. Se a organização não tiver regime nenhum configurado, o fallback é `14%`.
-- **`idempotencyKey`** — envia sempre um valor único (ex: o ID do pedido no teu sistema) ao criar facturas. Evita duplicados em caso de retry de rede.
-- **Consumidor Final**: para vendas anónimas/balcão, cria ou usa um cliente com `isConsumidorFinal: true` em vez de inventar um NIF. O sistema atribui automaticamente o NIF genérico `999999999`.
-- **`taxExemptionCode`** é obrigatório quando `taxRate` resultar em `0` (enviado ou resolvido a partir do regime), excepto para Consumidor Final — a API rejeita com `422 tax_exemption_code_required` se faltar. Códigos comuns: `M04` exclusão, `M22` saúde, `M21` ensino, `M13` livros, `M30` exportação.
-- **Sandbox**: organizações de sandbox (ou chaves `test`) nunca submetem à AGT real — `hash`, `atcud` e `agtStatus` vêm `null`, o número tem o prefixo `TESTE`. Usa isto para testar sem certificação AGT.
-- **`customers.ensure()` em sandbox nunca persiste**: com chave `test`, devolve um cliente efémero cujo `id` tem o formato `sandbox_cus_...` (não é UUID) — reconstruído a partir do próprio pedido, não fica gravado na base de dados. Usa esse `id` directamente como `customerId` ao criar a factura, funciona normalmente, mas não esperes encontrá-lo depois num `GET /customers`.
-- **Sem chave AGT própria configurada, a organização não consegue emitir nenhum documento fiscal real** (fora do sandbox) — API devolve `422 agt_keys_not_configured`. Isto é intencional: cada organização assina os seus próprios documentos, nunca com uma chave partilhada.
-- **Retenção na fonte** (Art. 67º do Código do Imposto Industrial) — opcional, desligada por omissão. Passa `applyWithholdingTax: true` ao criar (ou editar, só proformas) uma factura ou proforma. Só tem efeito se a organização a tiver activada no dashboard (Definições → Perfil → Retenção na fonte) e o valor ultrapassar o limiar mínimo configurado — nunca envies tu o valor calculado, é sempre resolvido no servidor. Não altera `subtotal`/`taxAmount`/`total` (esses continuam o valor fiscal oficial); viaja à parte no campo `withholdingTax` da resposta (`{ type, rate, amount, description }` ou `null`). Numa proforma, transporta-se automaticamente para a factura ao converteres — não precisas de pedir outra vez.
+- **Money is always an integer in Kwanza cents (AOA).** 1,000.00 Kz = `100000`. Never send floats.
+- **`taxRate` is optional and you should omit it when possible.** If sent, only `0`, `5` or `14` are accepted. If omitted, the server resolves it from the organisation's VAT regime (`ivaRegime`/`defaultTaxRate`, set in the dashboard under Definições → Perfil) - never hard-code `14`. Organisations in the `isento` or `simplificado` regime ("Exclusão" in the UI) **cannot** have lines with a rate other than `0`; the API rejects an incompatible rate with `422 tax_rate_incompatible_with_regime`. If the organisation has no regime configured, the fallback is `14%`.
+- **`idempotencyKey`** - always send a unique value (e.g. the order ID in your system) when creating invoices. Prevents duplicates on network retries.
+- **Consumidor Final**: for anonymous/counter sales, create or use a customer with `isConsumidorFinal: true` instead of inventing a NIF. The system assigns the generic NIF `999999999`.
+- **`taxExemptionCode`** is required when `taxRate` ends up `0` (sent or resolved from the regime), except for Consumidor Final - the API rejects with `422 tax_exemption_code_required` if missing. Common codes: `M04` exclusion, `M22` health, `M21` education, `M13` books, `M30` exports.
+- **Sandbox**: sandbox organisations (or `test` keys) never submit to the real AGT - `hash`, `atcud` and `agtStatus` come back `null` and the number has the `TESTE` prefix. Use it to test without AGT certification.
+- **`customers.ensure()` never persists in sandbox**: with a `test` key it returns an ephemeral customer whose `id` looks like `sandbox_cus_...` (not a UUID), rebuilt from the request and not stored. Use that `id` as `customerId` when creating the invoice - it works - but don't expect to find it later with `GET /customers`.
+- **Without its own AGT key configured, an organisation cannot issue any real fiscal document** (outside sandbox) - the API returns `422 agt_keys_not_configured`. This is intentional: each organisation signs its own documents, never with a shared key.
+- **Withholding tax** (*retenção na fonte*, Art. 67 of the Industrial Tax Code) - optional, off by default. Pass `applyWithholdingTax: true` when creating an invoice or pro-forma (or editing a pro-forma). It only applies if the organisation enabled it in the dashboard (Definições → Perfil → Retenção na fonte) and the amount is above the configured minimum - never send the computed amount yourself, the server always resolves it. It does not change `subtotal`/`taxAmount`/`total` (those remain the official fiscal values); it comes separately in the response's `withholdingTax` field (`{ type, rate, amount, description }` or `null`). On a pro-forma it carries over to the invoice automatically when you convert it.
 
-## Fluxo típico: criar uma factura
+## Typical flow: create an invoice
 
 ```bash
-# 1. Garantir o cliente (cria ou actualiza por externalId)
+# 1. Ensure the customer (creates or updates by externalId)
 curl -X POST https://api.vero.ao/v1/organisations/{orgId}/customers/ensure \
   -H "Authorization: Bearer sk_..." -H "Content-Type: application/json" \
   -d '{"externalId":"user_123","name":"Empresa ABC","taxId":"5000123456","email":"financeiro@empresaabc.ao"}'
 
-# 2. Criar a factura
+# 2. Create the invoice
 curl -X POST https://api.vero.ao/v1/organisations/{orgId}/invoices \
   -H "Authorization: Bearer sk_..." -H "Content-Type: application/json" \
   -d '{
-    "customerId": "uuid-do-cliente",
+    "customerId": "customer-uuid",
     "documentType": "FT",
     "idempotencyKey": "order_789",
     "items": [
@@ -51,9 +53,9 @@ curl -X POST https://api.vero.ao/v1/organisations/{orgId}/invoices \
   }'
 ```
 
-Resposta inclui `number` (ex: `"FT FT6326S62896N/1"`), `pdfUrl`, `atcud`, `hash`, `agtStatus` (fica `pending` por instantes, depois `validated` ou `rejected` — submissão à AGT é assíncrona).
+The response includes `number` (e.g. `"FT FT6326S62896N/1"`), `pdfUrl`, `atcud`, `hash` and `agtStatus` (`pending` for a moment, then `validated` or `rejected` - submission to the AGT is asynchronous).
 
-## SDK Node.js (recomendado para backend)
+## Node.js SDK (recommended for backends)
 
 ```bash
 npm install @veroao/node
@@ -72,54 +74,58 @@ const invoice = await vero.invoices.create(orgId, {
 })
 ```
 
-## SDK React (`@veroao/react`) e Widget (`@veroao/widget`)
+## React SDK (`@veroao/react`) and Widget (`@veroao/widget`)
 
-- `@veroao/react` — hooks para apps React que já têm o teu próprio backend a chamar a API (a chave secreta nunca vai para o browser).
-- `@veroao/widget` — para embeber directamente num site de terceiros, com a chave **publishable** (`pk_`). Não precisa de build step: `<script src=".../widget.iife.js">`. Único caso legítimo de chamar a Vero directamente do browser.
+- `@veroao/react` - hooks for React apps that already have their own backend calling the API (the secret key never goes to the browser).
+- `@veroao/widget` - to embed directly in a third-party site with the **publishable** key (`pk_`). No build step: `<script src=".../widget.iife.js">`. The only legitimate case for calling Vero directly from the browser.
 
-## Documentos disponíveis
+## Documents
 
-| Tipo | Endpoint base | Nota |
+| Type | Base endpoint | Note |
 |---|---|---|
-| Factura (FT) / Factura-Recibo (FR) | `/v1/organisations/{orgId}/invoices` | `documentType: 'FT'` ou `'FR'` |
-| Nota de Crédito | `/v1/organisations/{orgId}/invoices/{invoiceId}/credit-note` | Anula/corrige uma factura já emitida |
-| Nota de Débito | `/v1/organisations/{orgId}/debit-notes` | Documento independente. **Sem IVA** (DP 71/25, art. 3.º): linhas a 0%, `taxExemptionCode` por omissão `M02`; `taxRate` 5/14 → `422 debit_note_tax_not_allowed` |
-| Recibo | `/v1/organisations/{orgId}/invoices/{invoiceId}/receipt` | Confirma pagamento de uma FT (não FR, que já é paga) |
-| Anular recibo | `/v1/organisations/{orgId}/receipts/{id}/cancel` | Recibo emitido por engano. `{ "reason": "N" \| "I" }` - N: não enviado ao cliente, I: cliente mal identificado (únicos motivos que a AGT aceita). A factura volta a ficar por pagar. SDK: `vero.receipts.cancel(orgId, id, { reason: 'N' })` (@veroao/node ≥ 1.2) |
-| Anular nota de débito | `/v1/organisations/{orgId}/debit-notes/{id}/cancel` | ND emitida por engano. `{ "reason": "N" \| "I" }` - mesmos dois motivos legais dos recibos; fora deles a ND não se anula. Sai dos totais e, se já estava validada, a anulação é comunicada à AGT (`agtCancelStatus`). SDK: `vero.debitNotes.cancel(orgId, id, { reason: 'I' })` (@veroao/node ≥ 1.3) |
-| Proforma | `/v1/organisations/{orgId}/proformas` | Não fiscal — usa `.../{id}/convert` para virar factura real |
-| Guia de Remessa | `/v1/organisations/{orgId}/invoices/{invoiceId}/delivery-note` | |
+| Invoice (FT) / Invoice-receipt (FR) | `/v1/organisations/{orgId}/invoices` | `documentType: 'FT'` or `'FR'` |
+| Credit note | `/v1/organisations/{orgId}/invoices/{invoiceId}/credit-note` | Cancels/corrects an issued invoice |
+| Debit note | `/v1/organisations/{orgId}/debit-notes` | Standalone document. **No VAT** (DP 71/25, art. 3): lines at 0%, `taxExemptionCode` defaults to `M02`; `taxRate` 5/14 → `422 debit_note_tax_not_allowed` |
+| Receipt | `/v1/organisations/{orgId}/invoices/{invoiceId}/receipt` | Confirms payment of an FT (not an FR, which is already paid) |
+| Cancel receipt | `/v1/organisations/{orgId}/receipts/{id}/cancel` | Receipt issued by mistake. `{ "reason": "N" \| "I" }` - N: not sent to the customer, I: wrong customer (the only reasons the AGT accepts). The invoice becomes unpaid again. SDK: `vero.receipts.cancel(orgId, id, { reason: 'N' })` (@veroao/node ≥ 1.2) |
+| Cancel debit note | `/v1/organisations/{orgId}/debit-notes/{id}/cancel` | Debit note issued by mistake. `{ "reason": "N" \| "I" }` - same two legal reasons as receipts; otherwise it cannot be cancelled. Leaves the totals and, if already validated, the cancellation is reported to the AGT (`agtCancelStatus`). SDK: `vero.debitNotes.cancel(orgId, id, { reason: 'I' })` (@veroao/node ≥ 1.3) |
+| Pro-forma | `/v1/organisations/{orgId}/proformas` | Not fiscal - use `.../{id}/convert` to turn it into a real invoice |
+| Delivery note | `/v1/organisations/{orgId}/invoices/{invoiceId}/delivery-note` | |
 
-Todos devolvem PDF em `.../{id}/pdf`, e há uma versão pública sem autenticação em `/v1/public/{tipo}/{id}/pdf` (para enviar por email/link directo).
+All return a PDF at `.../{id}/pdf`, and there is a public unauthenticated version at `/v1/public/{type}/{id}/pdf` (for sending by email or direct link).
+
+The PDF layout follows the template active in the organisation. Custom templates are built with `@veroao/invoice` - see the `vero-template` skill.
 
 ## Webhooks
 
 ```bash
 curl -X POST https://api.vero.ao/v1/organisations/{orgId}/webhooks \
   -H "Authorization: Bearer sk_..." -H "Content-Type: application/json" \
-  -d '{"url":"https://teu-site.com/webhook","events":["invoice.issued","invoice.cancelled"]}'
+  -d '{"url":"https://your-site.com/webhook","events":["invoice.issued","invoice.cancelled"]}'
 ```
 
-Eventos disponíveis: `invoice.issued`, `invoice.cancelled`, `proforma.converted`, `proforma.cancelled`.
+Events: `invoice.issued`, `invoice.cancelled`, `proforma.converted`, `proforma.cancelled`.
 
-Cada entrega vem com `X-Vero-Signature: sha256=...` (HMAC do body com o `secret` devolvido na criação — guarda-o, só é mostrado uma vez). Verifica sempre a assinatura antes de confiar no payload. Reentrega automática com backoff (1m, 5m, 30m, 2h, 8h) até 6 tentativas se o teu endpoint não responder `2xx`.
+Each delivery carries `X-Vero-Signature: sha256=...` (HMAC of the body with the `secret` returned on creation - store it, it is shown only once). Always verify the signature before trusting the payload. Automatic redelivery with backoff (1m, 5m, 30m, 2h, 8h), up to 6 attempts, if your endpoint doesn't answer `2xx`.
 
-## Erros comuns
+## Common errors
 
-| Erro | Significado |
+| Error | Meaning |
 |---|---|
-| `401 unauthorized` | Chave inválida, revogada, ou em falta no header `Authorization` |
-| `403 forbidden` | Chave `pk_` a tentar aceder a rota que não é `/v1/widget/*` (anular facturas/recibos/notas de débito exige chave secreta, no servidor) |
-| `422 agt_keys_not_configured` | Organização sem chave AGT própria — não emite fora do sandbox |
-| `400 insufficient_stock` | Produto com `trackStock: true` sem quantidade suficiente |
-| `409 receipt_already_exists` | Já existe um recibo activo para esta factura (anule-o primeiro se foi emitido por engano) |
-| `400 invalid_reason` | Anulação de recibo ou nota de débito com motivo diferente de `N`/`I` |
-| `409 already_cancelled` | O recibo ou a nota de débito já estava anulado |
-| `409 agt_pending` | A AGT ainda está a validar o documento - tente anular daqui a alguns minutos |
-| `422 tax_rate_incompatible_with_regime` | Linha com `taxRate` ≠ 0 numa organização em regime `isento`/`simplificado` |
-| `422 tax_exemption_code_required` | `taxRate` resolveu para `0` mas falta `taxExemptionCode` (e não é Consumidor Final) |
-| `422 invalid_tax_rate` | `taxRate` enviado não é `0`, `5` nem `14` |
+| `401 unauthorized` | Key invalid, revoked, or missing from the `Authorization` header |
+| `403 forbidden` | A `pk_` key calling a route outside `/v1/widget/*` (cancelling invoices/receipts/debit notes requires the secret key, on the server) |
+| `422 agt_keys_not_configured` | Organisation without its own AGT key - can't issue outside sandbox |
+| `400 insufficient_stock` | Product with `trackStock: true` without enough quantity |
+| `409 receipt_already_exists` | There is already an active receipt for this invoice (cancel it first if it was issued by mistake) |
+| `400 invalid_reason` | Receipt or debit-note cancellation with a reason other than `N`/`I` |
+| `409 already_cancelled` | The receipt or debit note was already cancelled |
+| `409 agt_pending` | The AGT is still validating the document - try cancelling again in a few minutes |
+| `422 tax_rate_incompatible_with_regime` | Line with `taxRate` ≠ 0 in an organisation in the `isento`/`simplificado` regime |
+| `422 tax_exemption_code_required` | `taxRate` resolved to `0` but `taxExemptionCode` is missing (and it isn't Consumidor Final) |
+| `422 invalid_tax_rate` | `taxRate` sent is not `0`, `5` or `14` |
 
-## Onde ver mais
+## More
 
-Documentação completa e interactiva: `https://vero.ao/docs`. Se precisares de um endpoint que não está aqui resumido, confirma lá antes de adivinhar o formato do payload. Mudanças que afectam código já escrito (novos campos, correcções de comportamento) ficam registadas em `https://vero.ao/docs/changelog` — os SDKs seguem semver, mas vale sempre confirmar aí antes de assumir um formato de payload que já não é actual.
+Full interactive documentation (Portuguese): `https://vero.ao/docs`. If you need an endpoint not summarised here, check it there before guessing the payload format. Changes that affect existing code (new fields, behaviour fixes) are logged at `https://vero.ao/docs/changelog` - the SDKs follow semver, but always check there before assuming a payload format that may be outdated.
+
+User-facing text on Vero (dashboard, documents, error messages shown to end users) is in Portuguese (Angola); keep that when you write UI copy for Vero integrations.

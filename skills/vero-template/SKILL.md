@@ -1,30 +1,32 @@
 ---
 name: vero-template
-description: Criar, verificar e publicar templates de facturas angolanas (FT, FR, NC, ND, RC, pró-forma) em React e Tailwind CSS com @veroao/invoice, e usá-los no Vero ou gerar o PDF no próprio projecto. Usa isto sempre que o utilizador pedir para "desenhar/criar um template de factura", "mudar o aspecto das facturas no Vero", "gerar o PDF de uma factura", "publicar um template no Vero Template" ou trabalhar com @veroao/invoice.
+description: Create, check and publish Angolan invoice templates (FT, FR, NC, ND, RC, pro-forma) in React and Tailwind CSS with @veroao/invoice, then use them in Vero or render the PDF in your own project. Use this whenever the user asks to "design/create an invoice template", "change how invoices look in Vero", "generate an invoice PDF", "publish a template to Vero Template" (or the Portuguese "criar um template de factura"), or works with @veroao/invoice.
 ---
 
-# Vero Template - templates de facturas em React + Tailwind
+# Vero Template - invoice templates in React + Tailwind
 
-`@veroao/invoice` transforma um componente React com classes Tailwind num PDF de factura angolana, com as regras da AGT incluídas. Um template só descreve o **aspecto**: tudo o que é fiscal (número, data, ATCUD, assinatura, QR, NIF, totais, menções legais) vem sempre dos dados do documento.
+`@veroao/invoice` turns a React component styled with Tailwind classes into an Angolan invoice PDF, with the AGT (tax authority) rules built in. A template only describes the **look**: everything fiscal (number, date, ATCUD, signature, QR code, tax IDs, totals, legal notes) always comes from the document data.
 
-- Site e documentação: https://template.vero.ao/
-- Código e galeria: https://github.com/Eterim/vero-template (pasta `templates/`)
-- Pacote: https://www.npmjs.com/package/@veroao/invoice (0.x - a API pode mudar até à 1.0)
+- Website and docs (Portuguese): https://template.vero.ao/
+- Code and gallery: https://github.com/Eterim/vero-template (`templates/` folder)
+- Package: https://www.npmjs.com/package/@veroao/invoice (0.x - the API may change until 1.0)
 
-## Começar
+Text printed on the PDF (labels, `Text` content) should be in Portuguese - these are Angolan fiscal documents. Library error messages are in Portuguese too; the meaning of each is in the table at the end.
+
+## Getting started
 
 ```bash
-npx @veroao/invoice init minhas-facturas   # projecto novo com templates/invoice.tsx
-cd minhas-facturas && npm install
-npx @veroao/invoice dev                     # pré-visualização ao vivo em http://localhost:3200
-npx @veroao/invoice check                   # o que o Vero e a galeria verificam (exit 1 se falhar)
+npx @veroao/invoice init my-invoices   # new project with templates/invoice.tsx
+cd my-invoices && npm install
+npx @veroao/invoice dev                 # live preview at http://localhost:3200
+npx @veroao/invoice check               # the same checks Vero and the gallery run (exit 1 on failure)
 ```
 
-Num projecto que já existe: `npm install @veroao/invoice react`.
+In an existing project: `npm install @veroao/invoice react`.
 
-O `dev` procura os templates em `templates/` (senão, na pasta actual): cada `.tsx` com `export default`, ou `<pasta>/<nome>/template.tsx`. Mostra os cinco tipos (FT, FR, NC, ND, RC), os erros com o componente e o motivo, e o botão **JSON para o Vero**.
+`dev` looks for templates in `templates/` (otherwise the current folder): every `.tsx` with a default export, or `<folder>/<name>/template.tsx`. It renders all five types (FT, FR, NC, ND, RC), shows errors with the component and the reason, and has a **JSON para o Vero** button.
 
-## Um template
+## A template
 
 ```tsx
 import { Tailwind, Document, Row, Logo, DocumentTitle, DocumentNumber,
@@ -55,75 +57,75 @@ export default function MyInvoice() {
 }
 ```
 
-Regras do componente:
-- Tem de devolver um `<Document>` (pode estar dentro de `<Tailwind>`).
-- Componentes próprios, `.map()` e condições funcionam. **Hooks não** (`useState`, `useEffect`…): um template não tem estado.
-- Só importa de `react` e `@veroao/invoice`. Nada de `fetch`, `process`, `eval`, `require`, timers ou `import()`.
+Component rules:
+- It must return a `<Document>` (optionally inside `<Tailwind>`).
+- Your own components, `.map()` and conditionals work. **Hooks don't** (`useState`, `useEffect`…): a template has no state.
+- Import only from `react` and `@veroao/invoice`. No `fetch`, `process`, `eval`, `require`, timers or `import()`.
 
-## Componentes
+## Components
 
-| Componente | Para quê | Props úteis |
+| Component | Purpose | Useful props |
 |---|---|---|
-| `Tailwind` | Cores e letras do template (como o `tailwind.config`) | `config={{ theme: { extend: { colors, fontFamily } } }}` |
-| `Document` | A página A4 (raiz) | `bg-*` fundo, `px-*` margens, `pt-*` margem de cima |
-| `Header` | Faixa a toda a largura no topo da 1.ª página | |
-| `Footer` | Faixa no fundo de todas as páginas | `h-*` altura |
-| `CornerDecoration` | Faixas decorativas no canto superior direito | `color` |
-| `Row` / `Column` | Lado a lado / empilhados | `gap-*`, `items-*`, `justify-*` |
-| `Text` | Texto livre (com variáveis, ver abaixo) | |
-| `Spacer` / `Hr` | Espaço vertical / linha | `h-*` / `border-t-*` |
-| `Logo` | Logótipo da empresa que emite (o template nunca traz um) | `fallback="name" \| "none"` |
+| `Tailwind` | Template colours and fonts (like `tailwind.config`) | `config={{ theme: { extend: { colors, fontFamily } } }}` |
+| `Document` | The A4 page (root) | `bg-*` background, `px-*` side margins, `pt-*` top margin |
+| `Header` | Full-width band at the top of page 1 | |
+| `Footer` | Band at the bottom of every page | `h-*` height |
+| `CornerDecoration` | Decorative stripes in the top-right corner | `color` |
+| `Row` / `Column` | Side by side / stacked | `gap-*`, `items-*`, `justify-*` |
+| `Text` | Free text (with variables, see below) | |
+| `Spacer` / `Hr` | Vertical space / rule | `h-*` / `border-t-*` |
+| `Logo` | Issuer's logo (a template never ships its own) | `fallback="name" \| "none"` |
 | `DocumentTitle` | "Factura", "Nota de Crédito"… | `withCode` |
-| `DocumentNumber` / `DocumentDate` / `Atcud` | Número, data, ATCUD | `prefix`, `withTime` |
+| `DocumentNumber` / `DocumentDate` / `Atcud` | Number, date, ATCUD | `prefix`, `withTime` |
 | `StatusBadge` | PAGO / POR PAGAR / ANULADO | |
-| `Issuer` / `Customer` | Empresa e cliente (nome, NIF, morada) | `label`, `taxIdLabel`, `labelClassName`, `nameClassName` |
-| `Payment` | Forma de pagamento | `label` |
-| `Items` | Tabela das linhas | `columns`, `headerClassName`, `rowClassName` (aceita `even:`), `gridClassName`, `showCurrency` |
-| `Totals` | Totais e IVA por taxa | `byRate`, `totalLabel`, `totalClassName`, `totalRowClassName`, `rowClassName` |
-| `Notes` / `AmountInWords` | Observações / total por extenso | `label`, `inline` |
-| `BankAccounts` | Contas da empresa | `layout="list" \| "table"` |
-| `LegalNotes` | ATCUD, isenções, texto legal | `parts` |
+| `Issuer` / `Customer` | Issuer and customer (name, NIF, address) | `label`, `taxIdLabel`, `labelClassName`, `nameClassName` |
+| `Payment` | Payment method | `label` |
+| `Items` | Line items table | `columns`, `headerClassName`, `rowClassName` (supports `even:`), `gridClassName`, `showCurrency` |
+| `Totals` | Totals and VAT by rate | `byRate`, `totalLabel`, `totalClassName`, `totalRowClassName`, `rowClassName` |
+| `Notes` / `AmountInWords` | Notes / total in words | `label`, `inline` |
+| `BankAccounts` | Issuer's bank accounts | `layout="list" \| "table"` |
+| `LegalNotes` | ATCUD, exemptions, legal text | `parts` |
 | `PageNumber` | "PÁGINA 1 / 2" | |
 
-Colunas de `Items`: `description`, `details`, `quantity`, `unitPrice`, `lineDiscount`, `taxRate`, `taxAmount`, `lineTotal` - `width` é a proporção da coluna - ex.: `columns={[{ field: "description", label: "Artigo", width: 3 }, { field: "quantity", label: "Qt", width: 0.8 }, { field: "lineTotal", label: "Total", width: 1 }]}`.
+`Items` columns: `description`, `details`, `quantity`, `unitPrice`, `lineDiscount`, `taxRate`, `taxAmount`, `lineTotal`. `width` is a relative proportion - e.g. `columns={[{ field: "description", label: "Artigo", width: 3 }, { field: "quantity", label: "Qt", width: 0.8 }, { field: "lineTotal", label: "Total", width: 1 }]}`.
 
-## Tailwind suportado
+## Supported Tailwind
 
-Medidas como na web (1 px = 0,75 pt; a A4 tem 794 px de largura).
+Sizes as on the web (1 px = 0.75 pt; A4 is 794 px wide).
 
-- Espaço: `p-* px-* py-* pt-* pb-* pl-* pr-* m*-*`, `gap-*`, `ml-auto`
-- Texto: `text-xs…6xl`, `text-[11px]`, `font-normal/semibold/bold`, `font-display`, `uppercase`, `tracking-*`, `leading-*`, `text-left/center/right`
-- Cor: paleta do Tailwind, cores do `config`, `text-[#hex]`, `bg-[#hex]`, `border-[#hex]`
-- Bordas: `border`, `border-2`, `border-[0.5px]`, `border-t/b/l/r-*`, `rounded-*`
-- Disposição: `flex-1`, `flex-[2]`, `items-*`, `justify-*`, `w-1/2`, `w-full`, `w-[200px]`, `h-*`
-- Variante: só `even:` (linhas alternadas da tabela)
-- Também `style={{ fontSize: 9 }}` (em pt)
+- Spacing: `p-* px-* py-* pt-* pb-* pl-* pr-* m*-*`, `gap-*`, `ml-auto`
+- Text: `text-xs…6xl`, `text-[11px]`, `font-normal/semibold/bold`, `font-display`, `uppercase`, `tracking-*`, `leading-*`, `text-left/center/right`
+- Colour: Tailwind palette, `config` colours, `text-[#hex]`, `bg-[#hex]`, `border-[#hex]`
+- Borders: `border`, `border-2`, `border-[0.5px]`, `border-t/b/l/r-*`, `rounded-*`
+- Layout: `flex-1`, `flex-[2]`, `items-*`, `justify-*`, `w-1/2`, `w-full`, `w-[200px]`, `h-*`
+- Variant: only `even:` (alternating table rows)
+- Also `style={{ fontSize: 9 }}` (in pt), like react-pdf
 
-**Não existem num PDF** e dão erro: `hover:`, `md:`/`lg:`, `dark:`, sombras, degradês, transformações, `grid`, posicionamento absoluto. Não os uses.
+**Not available in a PDF** and rejected with an error: `hover:`, `md:`/`lg:`, `dark:`, shadows, gradients, transforms, `grid`, absolute positioning. Don't use them.
 
-## O que um template NUNCA pode ter
+## What a template must NEVER contain
 
-A biblioteca, o Vero e a CI da galeria recusam (`checkTemplate`):
-- IBAN, números de conta, telefones, NIF ou outros números longos escritos à mão → usa `<BankAccounts />`, `<Issuer />`.
-- Ligações e e-mails escritos à mão → usa as variáveis.
-- Frases que imitam menções fiscais ("Processado por programa válido", ATCUD, AGT, códigos de isenção, "Original", "Pago") → vêm de `<LegalNotes />`, `<Atcud />`, `<StatusBadge />`.
-- Caracteres invisíveis.
+The library, Vero and the gallery CI reject (`checkTemplate`):
+- Hand-written IBANs, account numbers, phone numbers, NIFs or other long numbers → use `<BankAccounts />`, `<Issuer />`.
+- Hand-written links and e-mails → use the variables.
+- Phrases imitating fiscal notes ("Processado por programa válido", ATCUD, AGT, exemption codes, "Original", "Pago") → they come from `<LegalNotes />`, `<Atcud />`, `<StatusBadge />`.
+- Invisible characters.
 
-Variáveis permitidas em `Text`, `prefix` e `label`: `{{org.name}}`, `{{org.website}}`, `{{org.email}}`, `{{org.phone}}`, `{{customer.name}}`, `{{document.reference}}`, `{{document.number}}`, `{{document.title}}`, `{{document.type}}`.
+Variables allowed in `Text`, `prefix` and `label`: `{{org.name}}`, `{{org.website}}`, `{{org.email}}`, `{{org.phone}}`, `{{customer.name}}`, `{{document.reference}}`, `{{document.number}}`, `{{document.title}}`, `{{document.type}}`.
 
 ```tsx
 <Text className="text-[9px] text-zinc-500">{"{{org.name}} · {{org.website}} · {{org.email}}"}</Text>
 ```
 
-## O que a biblioteca garante sozinha (não reimplementes)
+## What the library guarantees on its own (don't reimplement)
 
-- QR AGT no canto inferior direito da última página (a pró-forma não leva).
-- Rodapé AGT ("XXXX-Processado por programa válido nº …" + número do documento) em todas as páginas.
-- Retenção na fonte e "Valor líquido a pagar", "IVA - Regime Simplificado", "Não sujeito" nas linhas M02, marca de água nos anulados, aviso da pró-forma.
-- Elementos obrigatórios em falta (título, número, data, partes, linhas, totais, menções legais) são acrescentados e aparecem nos `warnings` - corrige o template para não haver avisos.
-- Contraste mínimo 4,5 e nunca menos de 7 pt no texto fiscal.
+- AGT QR code in the bottom-right corner of the last page (pro-formas don't get one).
+- AGT footer ("XXXX-Processado por programa válido nº …" + document number) on every page.
+- Withholding tax and "Valor líquido a pagar", "IVA - Regime Simplificado", "Não sujeito" on M02 lines, watermark on cancelled documents, pro-forma notice.
+- Missing mandatory elements (title, number, date, parties, lines, totals, legal notes) are added and reported in `warnings` - fix the template so there are none.
+- Minimum contrast of 4.5 and never below 7 pt for fiscal text.
 
-## Gerar o PDF no teu projecto (sem o Vero)
+## Rendering the PDF in your own project (without Vero)
 
 ```ts
 import { render, sampleDocument } from "@veroao/invoice"
@@ -132,39 +134,39 @@ import MyInvoice from "./templates/invoice"
 const { pdf, warnings } = await render(<MyInvoice />, sampleDocument("FT"))  // pdf: Uint8Array
 ```
 
-O segundo argumento é um `DocumentData` com os dados reais: `documentType` (`FT|FR|NC|ND|RC|PF`), `number`, `issuedAt`, `atcud`, `hashChars` (4 caracteres da assinatura), `certificationNumber` (o número do **teu** programa certificado), `qrUrl`, `org`, `customer`, `lines`, `totals` (valores em cêntimos), `currency`, e opcionalmente `status`, `payment`, `withholding`, `notes`, `amountInWords`. Para experimentar usa `sampleDocument(tipo)`.
+The second argument is a `DocumentData` with the real data: `documentType` (`FT|FR|NC|ND|RC|PF`), `number`, `issuedAt`, `atcud`, `hashChars` (4 signature characters), `certificationNumber` (**your** certified software number), `qrUrl`, `org`, `customer`, `lines`, `totals` (amounts in cents), `currency`, and optionally `status`, `payment`, `withholding`, `notes`, `amountInWords`. To experiment, use `sampleDocument(type)`.
 
-## Usar no Vero
+## Using it in Vero
 
-1. Obter o JSON: botão **JSON para o Vero** do `dev`, ou `compile(<MyInvoice />)` (devolve o template; o JSON de importação é `{ format: "vero-template", schemaVersion: 2, id, version, name, author, template }`).
-2. No Vero (plano Pro): Definições → Template de facturas → **Importar template**, colar o JSON, ver a pré-visualização com os dados da empresa, **Importar e usar**.
-3. Templates da galeria: o botão **Abrir no Vero** na página do template abre a importação já preenchida.
+1. Get the JSON: the **JSON para o Vero** button in `dev`, or `compile(<MyInvoice />)` (returns the template; the import JSON is `{ format: "vero-template", schemaVersion: 2, id, version, name, author, template }`).
+2. In Vero (Pro plan): Definições → Template de facturas → **Importar template**, paste the JSON, review the preview with the company's data, **Importar e usar**.
+3. Gallery templates: the **Abrir no Vero** button on the template page opens the import already filled in.
 
-O Vero só recebe JSON, nunca executa código. Cada documento fica preso à versão do template com que foi emitido; os já emitidos não mudam.
+Vero only receives JSON and never runs code. Each document is pinned to the template version it was issued with; documents already issued never change.
 
-## Publicar na galeria (pull request)
+## Publishing to the gallery (pull request)
 
-1. Fork de `Eterim/vero-template`, criar `templates/<nome>/` (minúsculas, números, hífens) com `meta.json` e `template.tsx` - copiar um template existente como ponto de partida.
-2. `meta.json`: `slug`, `name`, `description`, `author: { name: "<github>" }`, `collection: "comunidade"`, `version: 1` (subir sempre que o template mudar), `license: "MIT"`, `docTypes`, `tags`.
-3. Gerar `template.json` e as pré-visualizações (nunca editar à mão) e verificar:
+1. Fork `Eterim/vero-template` and create `templates/<name>/` (lowercase letters, digits, hyphens) with `meta.json` and `template.tsx` - copy an existing template as a starting point.
+2. `meta.json`: `slug`, `name`, `description`, `author: { name: "<github-user>" }`, `collection: "comunidade"`, `version: 1` (bump on every change), `license: "MIT"`, `docTypes`, `tags`.
+3. Generate `template.json` and the previews (never edit them by hand) and check:
    ```bash
    npm install
-   npm run templates -w packages/invoice -- <nome>
-   npm run check:templates -w packages/invoice -- <nome>
+   npm run templates -w packages/invoice -- <name>
+   npm run check:templates -w packages/invoice -- <name>
    ```
-4. Abrir o PR. Um PR de fora só pode mexer numa pasta `templates/<nome>/` própria. A CI repete as verificações e um maintainer revê antes do merge.
+4. Open the PR. An external PR may only touch its own `templates/<name>/` folder. CI repeats the checks and a maintainer reviews before merging.
 
-## Erros comuns
+## Common errors (messages are in Portuguese)
 
-| Mensagem | Causa | Correcção |
+| Message | Cause | Fix |
 |---|---|---|
-| `hooks não são suportados` | `useState`/`useEffect` no template | Tirar o hook; calcular com props/constantes |
-| `o template tem de devolver um <Document>` | Raiz errada | Envolver tudo em `<Document>` (dentro de `<Tailwind>` se houver config) |
-| `variável desconhecida {{…}}` | Variável fora da lista | Usar só as variáveis permitidas |
-| `números de conta, telefone, NIF…` | Número escrito à mão | `<BankAccounts />` / `<Issuer />` |
-| `ligações não podem estar no template` | URL no texto | `{{org.website}}` |
-| `elemento obrigatório que não estava no template` | Falta um componente fiscal | Acrescentar o componente indicado |
-| `template.json não corresponde ao template.tsx` | JSON editado à mão ou desactualizado | `npm run templates -w packages/invoice -- <nome>` |
-| Classe com `hover:`/`md:`/`shadow`/`grid` recusada | Não existe num PDF | Usar `flex`/`Row`/`Column` e cores sólidas |
+| `hooks não são suportados` | `useState`/`useEffect` in the template | Remove the hook; compute from props/constants |
+| `o template tem de devolver um <Document>` | Wrong root | Wrap everything in `<Document>` (inside `<Tailwind>` if there is a config) |
+| `variável desconhecida {{…}}` | Variable not in the list | Use only the allowed variables |
+| `números de conta, telefone, NIF…` | Hand-written number | `<BankAccounts />` / `<Issuer />` |
+| `ligações não podem estar no template` | URL in text | `{{org.website}}` |
+| `elemento obrigatório que não estava no template` | A fiscal component is missing | Add the component named in the message |
+| `template.json não corresponde ao template.tsx` | JSON edited by hand or stale | `npm run templates -w packages/invoice -- <name>` |
+| Class with `hover:`/`md:`/`shadow`/`grid` rejected | Doesn't exist in a PDF | Use `flex`/`Row`/`Column` and solid colours |
 
-Para integrar a API de facturação do Vero (emitir facturas, clientes, webhooks), usa a skill `vero`.
+To integrate Vero's invoicing API (issuing invoices, customers, webhooks), use the `vero` skill.

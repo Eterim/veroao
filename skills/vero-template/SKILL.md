@@ -7,7 +7,7 @@ description: Criar, verificar e publicar templates de facturas angolanas (FT, FR
 
 `@veroao/invoice` transforma um componente React com classes Tailwind num PDF de factura angolana, com as regras da AGT incluídas. Um template só descreve o **aspecto**: tudo o que é fiscal (número, data, ATCUD, assinatura, QR, NIF, totais, menções legais) vem sempre dos dados do documento.
 
-- Site e documentação: https://eterim.github.io/vero-template/
+- Site e documentação: https://template.vero.ao/
 - Código e galeria: https://github.com/Eterim/vero-template (pasta `templates/`)
 - Pacote: https://www.npmjs.com/package/@veroao/invoice (0.x - a API pode mudar até à 1.0)
 

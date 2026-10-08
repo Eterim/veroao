@@ -12,11 +12,11 @@ The skills themselves are written in Portuguese - Vero's users are in Angola.
 ## Install
 
 ```bash
-npx skills add Eterim/skills                        # both
-npx skills add Eterim/skills --skill vero-template  # just one
+npx skills add Eterim/veroao                        # both
+npx skills add Eterim/veroao --skill vero-template  # just one
 ```
 
-Listed on [skills.sh](https://skills.sh/Eterim/skills).
+Listed on [skills.sh](https://skills.sh/eterim/veroao).
 
 ## License
 
